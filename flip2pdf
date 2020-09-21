@@ -1,0 +1,175 @@
+import requests
+from tkinter import Label, Button, Text, END, Tk
+from PIL import Image, ImageTk
+
+
+#Total number of pages the book has. Will be updated from user input.
+PAGES = None
+
+#bg COLOR
+BLACK = "#323336"
+
+#Process Log. Will be updated as the program runs.
+process = ""
+
+#Reference URL from where to get the images. Will be updated from user input.
+url = ""
+
+#will store the images of the pages.
+book = []
+
+
+def get_pages():
+
+    #Reset in case user downloads more than one book.
+    global book
+    book=[]
+
+    #DOWNLOAD THE PAGES
+
+    #Starts from page 0 by default.
+    page_number = 0
+
+    while page_number < PAGES:
+
+        global process
+        process = "Descargando: {}/{}".format(page_number+1, PAGES)
+        process_label.config(text=process)
+        root.update()
+
+        if "/UNO" in url:
+
+            current_url = url.replace("/UNO", ("/" + str(page_number)))
+
+            im = Image.open(requests.get(current_url, stream=True).raw)
+
+            book.append(im)
+
+        elif "/TRES" in url:
+
+            current_url = url.replace("/TRES", "/" + f"{page_number:03}")
+            
+            im = Image.open(requests.get(current_url, stream=True).raw)
+
+            book.append(im)
+
+
+        page_number +=1
+
+#CREATE PDF
+
+def create_pdf():
+
+    global process
+    process = "Convirtiendo en PDF..."
+    process_label.config(text=process)
+    root.update()
+
+    cover = book[0]
+
+    pdf1_filename = "book/book.pdf"
+
+    cover.save(pdf1_filename, "PDF" ,resolution=100.0, save_all=True, append_images=book[1::])
+
+    process = "Listo!"
+    process_label.config(text=process)
+    root.update()
+
+def get_url_input():
+    global url
+    url = url_type_t.get("1.0", "end-1c")
+    url_label.config(text=url)
+    return
+
+def get_page_number_input():
+    global PAGES
+    PAGES = int(pagen_type_t.get("1.0", "end-1c"))
+    pagen_label.config(text=PAGES)
+    return
+
+def main():
+    get_pages()
+    create_pdf()
+
+#GUI
+
+#main window
+root = Tk()
+root.title("FlipBook to PDF by Hu-Bots")
+root.geometry("1000x800")
+root.config(bg=BLACK)
+
+#Hu Bots Image
+hubots_img = Image.open("hubots.png")
+hubots_img_w, hubots_img_h = hubots_img.size
+hubots_img_header = hubots_img.resize((round(hubots_img_w*.1), round(hubots_img_h*.1)))
+hubots_img_header = ImageTk.PhotoImage(hubots_img_header)
+hubots_img_icon = ImageTk.PhotoImage(hubots_img)
+
+#HuBots icon
+root.iconphoto(False, hubots_img_icon)
+
+#Header
+header_label = Label(root, text="Flipbook to PDF by Hu-Bots")
+header_label.config(bg=BLACK, fg="White", font = ("Fira Code", 30))
+header_label.pack()
+
+#URL - iNSTRUCTION
+url_ins_l = Label(root, text="1. Ingresa la URL y reemplaza el número de página por \"TRES\" o \"UNO\", \n segun el numero de ceros.")
+url_ins_l.config(bg=BLACK, fg="White", font=("Calibri", 20), pady=15)
+url_ins_l.pack()
+
+#URL - Text input
+url_type_t = Text(root)
+url_type_t.config(pady=20, height=1, width=100, borderwidth=5, font=("Calibri",15))
+url_type_t.pack()
+
+#URL - Submit
+url_submit_b = Button(root, text="Submit URL")
+url_submit_b.config(bg="Green", fg="White", padx=15, pady=8, borderwidth=5, command=get_url_input)
+url_submit_b['font'] = ("Calibri", 15)
+url_submit_b.pack()
+
+#URL - Label
+
+url_label = Label(root)
+url_label.config(text=url, bg=BLACK, fg="#EDF694", font=("Calibri", 18), pady=10)
+url_label.pack()
+
+#Page Number - INSTRUCTION
+pagen_ins_l = Label(root, text="2. Ingresa el número de páginas que tiene el libro.")
+pagen_ins_l.config(bg=BLACK, fg="White", font=("Calibri", 20), pady=15)
+pagen_ins_l.pack()
+
+#Page Number - Text input
+pagen_type_t = Text(root)
+pagen_type_t.config(pady=20, height=0, width=10, borderwidth=5, font=("Calibri",15))
+pagen_type_t.pack()
+
+#Page Number - Submit
+pagen_submit_b = Button(root, text="Submit #")
+pagen_submit_b.config(bg="Green", fg="White", padx=15, pady=8, borderwidth=5, command=get_page_number_input)
+pagen_submit_b['font'] = ("Calibri", 15)
+pagen_submit_b.pack()
+
+#Page Number- Label
+
+pagen_label = Label(root)
+pagen_label.config(text=PAGES, bg=BLACK, fg="#EDF694", font=("Calibri", 18), pady=10)
+pagen_label.pack()
+
+#Download - Button
+
+download_b = Button(root, text="Download")
+download_b.config(bg="#065535", fg="White", padx=15, pady=8, borderwidth=5, command=main)
+download_b['font'] = ("Calibri", 15)
+download_b.pack()
+
+#Process Label
+
+process_label = Label(root)
+process_label.config(text=process, bg=BLACK, fg="white", font=("Calibri", 18), pady=10)
+process_label.pack()
+
+
+root.mainloop()
